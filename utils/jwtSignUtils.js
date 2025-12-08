@@ -1,14 +1,15 @@
 import jwt from "jsonwebtoken";
 
-export const jwtSignUtil = (user) => {
-    const payload = {
-        username : user.username,
-        email : user.email
-    }
+const JWT_SECRET = process.env.JWT_SECRET || "goalsync_secret";
 
-    const expiresIn = {
-        expiresIn : '1h'
-    }
+export const getJwtToken = (userId, username) => {
+    return jwt.sign(
+        {userId: userId, username: username},
+        JWT_SECRET,
+        {expiresIn: "7d"}
+    );
+};
 
-    return jwt.sign(payload, "JWT_SECRET_KEY", expiresIn)
-}
+export const verifyJwtToken = (token) => {
+    return jwt.verify(token, JWT_SECRET);
+};

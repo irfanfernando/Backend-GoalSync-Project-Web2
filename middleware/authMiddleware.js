@@ -1,22 +1,21 @@
-// import passport from "passport";
+import jwt from "jsonwebtoken";
+const JWT_SECRET = "goalsync_secret";
 
-// export const protect = (req,res,next) => {
-//     passport.authenticate(
-//         'jwt', 
-//         {
-//         session: false
-//         }, 
-//         (err, user, info) => {
-//             if (err || !user) {
-//                 return res.status(401).json({
-//                     message: info? info.message : "Unauthorized",
-//                     err: err || "Tidak valid",
-//                 });
-//             }
+export const authenticateTokenMiddleware = (req, res, next) =>{
+    const authHeader = req.headers.authorization;
 
-//             req.user = user;
+    if(!authHeader){
+        return res.status(401).json({message: "Token tidak ditemukan"});
+    }
 
-//             return next(); 
-//         }
-//     )(req, res, next); 
-// }
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if(err){
+            return res.status(403).json({message: "Token tidak valid"});
+        }
+
+        req.user = user;
+        next()
+    });
+}

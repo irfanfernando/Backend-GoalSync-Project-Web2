@@ -1,4 +1,4 @@
-import database from "../config/database.js";
+
 import Goal from "../models/goalModels.js";
 import mongoose from "mongoose";
 
@@ -7,25 +7,41 @@ export const updateProgress = async (req, res) => {
         const {id} = req.params;
         const {delta, userId, note} = req.body;
 
-        const goal = await Goal.findOne({
-            _id: id,
-            createdBy: req.user?.user_id
+        
+        
+        if(!mongoose.Types.ObjectId.isValid(id)){
+            return res.status(400).json({message: "ID Tidak valid"});
+        }
 
-        });
+        const filter = req.user?.user_id ? { _id: id, createdBy: req.user.user_id} : {_id: id};
+        
+        const goal = await Goal.findOne(filter).exec();
 
-        if(!goal)
+        if(!goal){
             return res.status(404).json({message: " Goal Tidak Ditemukan"});
+        }
 
-        goal.currentValue += delta;
-        goal.actions.push({delta, userId, note});
+        if (!goal.action || !Array.isArray(goal.actions)) {
+            goal.actions= [];
+        }
+
+        const numericDelta = Number(delta || 0);
+        goal.currentValue = (Number(goal.currentValue) || 0) + numericDelta;
+
+        goal.actions.push({
+            userId,
+            delta: numericDelta,
+            note
+        });
 
         await goal.save();
 
-        res.json({
-            message: "Progress Berhasil Diupdate",
-            data: goal
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message});
+        return res.json({ message: "Progress Berhasil Diupate", data: goal});
+    }catch(err) {
+        console.error("[updateProgress] ERROR:", err);
+        return res.status(500).json({message : " Server error", error: err.message});
+
     }
 };
+
+       

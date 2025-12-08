@@ -1,81 +1,72 @@
-// import UserModel from "../models/usermodel.js";
-// import { hashedPassword, verifyPassword } from "../utils/hashUtil.js";
-// import { getJwtToken } from "../utils/jwtUtil.js";
+import { hash, compare } from "../utils/hashUtils.js";
+import userModel from "../models/userModel.js";
+import { getJwtToken } from "../utils/jwtSignUtils.js";
 
-export const signIn = async (req, res) => {
+
+export const signUp = async (req, res) =>{
     try{
-        // const { email, password} = req.body;
+        const {username, email, password} = req.body;
 
-        // if(!email || ! password) {
-        //     return res.status(400).send({
-        //         error: 'Email dan password wajib diisi',
-        //         data : null
-        //     });
-        // }
+        if(!username || !email || !password) {
+            return res.status(400).json({
+                message: " Username, email, dan password wajib diisi"
+            });
+        }
 
-        // const user = await UserModel.findOne({ email});
-        // if (!user) {
-        //     return res.status(400).send({
-        //         error: 'Email atau password salah',
-        //         data: null
-        //     });
-        // }
-            
-        // const isMatch = await verifyPassword(password, user.password);
-        // if(!isMatch){
-        //     return res.status(400).send({
-        //         error: 'Password salah',
-        //         data : null
-        //     });
-        // }
+        const exist = await userModel.findOne({email});
+        if (exist) {
+            return res.status(400).json({
+                message: "Email sudah digunakan"
+            });
+        }
 
-        // const token = getJwtToken(user._id, user.username);
+        const hashedPassword = hash(password);
 
-        // return res.status(200).send({
-        //     message: ' Login berhasil',
-        //     data: { token}
-        // });
-    }catch (error) {
-        return res.status(400).send({
-            message: error.message,
-            error,
-            data: null
+        await userModel.create({
+            username,
+            email,
+            password: hashedPassword
         });
+
+        res.status(200).json({
+            message: "Pendaftaran berhasil, silahkan login"
+        });
+    }catch (error){
+        res.status(500).json({message: error.message});
     }
 };
 
-export const signUp = async (req, res) => {
+export const signIn = async (req, res) => {
     try{
-        // const{ username, email, password}= req.body;
+        const {email, password }= req.body;
 
-        // if(!username || !email || !password) {
-        //     return res.status(400).send({
-        //         error : 'Username, email, dan password wajib diisi',
-        //         data: null,
-        //     });
-        // }
+        if( !email || !password) {
+            return res.status(400).json({
+                messsage: "Email dan password wajib diisi"
+            });
+        }
 
-        // const hashPassword = await hashedPassword(password);
-        // const newUser = await UserModel.create({
-        //     username, email, password: hashPassword,
-        // });
+        const user = await userModel.findOne({email});
+        if(!user){
+            return res.status(400).json({
+                message:"Email tidak ditemukan"
+            });
+        }
 
-        // if (newUser){
-        //     return res.status(200).send({
-        //         message: 'Berhasil melakukan pendaftaran, silahkan login',
-        //         data:null
-        //     });
-        // }
+        const match = compare(password, user.password);
+        if(!match) {
+            return res.status(400).json({
+                message: " Password Salah"
+            });
+        }
 
-        // return res.status(500).send({
-        //     message: 'Gagal melakukan pendaftaran, silahkan coba lagi',
-        //     data: null,
-        // });
-    }catch(error){
-        return res.status(400).send({
-            message: error.message,
-            error,
-            data: null,
-        });;
+        const token = getJwtToken(user._id, user.username);
+
+        res.status(200).json({
+            message: "Login berhasil",
+            data: {token}
+        });
+    }catch (error){
+        res.status(500).json({message: error.message});
     }
-}
+};
