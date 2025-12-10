@@ -13,6 +13,8 @@ export const updateProgress = async (req, res) => {
             return res.status(400).json({message: "ID Tidak valid"});
         }
 
+        const numericDelta = Number(delta ?? value ?? 0);
+
         const filter = req.user?.user_id ? { _id: id, createdBy: req.user.user_id} : {_id: id};
         
         const goal = await Goal.findOne(filter).exec();
@@ -25,13 +27,15 @@ export const updateProgress = async (req, res) => {
             goal.actions= [];
         }
 
-        const numericDelta = Number(delta || 0);
+        
         goal.currentValue = (Number(goal.currentValue) || 0) + numericDelta;
+        goal.progress = Math.min(100, Math.max(0, Number(goal.progress) + numericDelta));
 
         goal.actions.push({
-            userId,
-            delta: numericDelta,
-            note
+            userId: userId || req.user?.user_id,
+            note: note || "",
+            value: numericDelta,
+            createdAt: new Date()
         });
 
         await goal.save();
