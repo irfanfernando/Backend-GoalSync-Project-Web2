@@ -3,13 +3,25 @@ import mongoose from "mongoose";
 
 export const listGoals = async (req, res) => {
     try{
-        const goals = await Goal.find({ createdBy: req.user?.user_id})
-            .sort({createdAt: -1});
+        const filter = req.user?.userId ? { createdBy: req.user.userId } : {};
+        const docs = await Goal.find(filter).lean().exec(); 
 
-            res.json({message: "List Goals", data:goals});
+        const results = docs.map((goal) => {
+            const current = Number(goal.currentValue ?? 0);
+            const target = Number(goal.targetValue ?? 100); 
+            const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
 
-    } catch(err) {
-        res.status(500).json({ message: "Server Error", error: err.message});
+      return {
+        ...goal,
+        progress,
+      };
+    });
+
+    return res.json({ data: results });
+
+    } catch(error) {
+        console.error("[listGoals] ERROR:", error);
+        res.status(500).json({ message: "Server Error !", error: err.message});
     }
 }
 
@@ -28,7 +40,7 @@ export const addGoal = async (req, res)=> {
             title,
             description,
             targetValue,
-            createdBy: req.user?.user_id
+            createdBy: req.user.userId
         });
 
         res.status(201).json({
@@ -50,7 +62,7 @@ export const detailGoal = async (req, res) => {
             return res.status(400).json({ message: "ID Tidak Valid"});
         const goal = await Goal.findOne({
             _id: id,
-            createdBy: req.user?.user_id
+            createdBy: req.user.userId
         });
 
         if(!goal)
@@ -71,7 +83,7 @@ export const updateGoal = async (req, res) => {
             return res.status(400).json({message: "ID Tidak Valid"});
 
         const updated = await Goal.findOneAndUpdate(
-            { _id: id, createdBy: req.user?.user_id},
+            { _id: id, createdBy: req.user.userId},
             updates,
             { new : true}
         );
@@ -96,7 +108,7 @@ export const deleteGoal = async (req, res) => {
 
         const deleted = await Goal.findOneAndDelete({
             _id: id,
-            createdBy: req.user?.user_id
+            createdBy: req.user.userId
         });
 
         if(!deleted)

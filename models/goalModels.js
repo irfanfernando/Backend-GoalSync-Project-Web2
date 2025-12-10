@@ -29,7 +29,7 @@ const goalSchema = new mongoose.Schema({
         trim: true
     },
     description: { type: String, default: "" },
-    targetValue: { type: Number },
+    targetValue: { type: Number, default: 100 },
     currentValue: { type: Number, default: 0 },
     members: { type: [memberSchema], default: [] },
     actions: { type: [actionSchema], default: [] },

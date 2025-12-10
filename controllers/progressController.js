@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 export const updateProgress = async (req, res) => {
     try {
         const {id} = req.params;
-        const {delta, userId, note} = req.body;
+        const {delta, value, userId, note} = req.body;
 
         
         
@@ -15,12 +15,20 @@ export const updateProgress = async (req, res) => {
 
         const numericDelta = Number(delta ?? value ?? 0);
 
-        const filter = req.user?.user_id ? { _id: id, createdBy: req.user.user_id} : {_id: id};
+        const filter = req.user?.userId ? { _id: id, createdBy: req.user.userId} : {_id: id};
         
-        const goal = await Goal.findOne(filter).exec();
+        let goal = await Goal.findOne(filter).exec();
+
+        if (!goal && req.user?.userId) {
+            goal = await Goal.findById(id).exec();
+        }
 
         if(!goal){
             return res.status(404).json({message: " Goal Tidak Ditemukan"});
+        }
+
+        if (!goal.createdBy && req.user?.userId) {
+            goal.createdBy = req.user.userId;
         }
 
         if (!goal.actions || !Array.isArray(goal.actions)) {
@@ -32,7 +40,7 @@ export const updateProgress = async (req, res) => {
         goal.progress = Math.min(100, Math.max(0, Number(goal.progress) + numericDelta));
 
         goal.actions.push({
-            userId: userId || req.user?.user_id,
+            userId: userId || req.user?.userId,
             note: note || "",
             value: numericDelta,
             createdAt: new Date()
