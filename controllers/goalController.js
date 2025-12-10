@@ -48,7 +48,7 @@ export const detailGoal = async (req, res) => {
 
         if(!mongoose.Types.ObjectId.isValid(id))
             return res.status(400).json({ message: "ID Tidak Valid"});
-        const goal = await Goal.findone({
+        const goal = await Goal.findOne({
             _id: id,
             createdBy: req.user?.user_id
         });
@@ -83,7 +83,7 @@ export const updateGoal = async (req, res) => {
             data:updated
         });
     } catch (err) {
-        res.status(500)({ message: "Server Error", error: err.message});
+        res.status(500).json({ message: "Server Error", error: err.message});
     }
 };
 

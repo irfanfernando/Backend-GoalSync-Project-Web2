@@ -31,11 +31,11 @@ export const addMember = async (req, res) => {
         }
 
 
-        goal.members.push({userId, name, role: role || "member "});
+        goal.members.push({userId, name, role: role || "member"});
         await goal.save();
 
         res.json({ message: "Member ditambahkan", data: goal});
     } catch (err) {
-        res.status (500).json({ message: "Server Error", errror: err.message});
+        res.status (500).json({ message: "Server Error", error: err.message});
     }
 };

@@ -21,7 +21,7 @@ export const updateProgress = async (req, res) => {
             return res.status(404).json({message: " Goal Tidak Ditemukan"});
         }
 
-        if (!goal.action || !Array.isArray(goal.actions)) {
+        if (!goal.actions || !Array.isArray(goal.actions)) {
             goal.actions= [];
         }
 
