@@ -71,7 +71,11 @@ export const detailGoal = async (req, res) => {
 
         if(!mongoose.Types.ObjectId.isValid(id))
             return res.status(400).json({ message: "ID Tidak Valid"});
-        const doc = await Goal.findById(id).lean().exec();
+        const doc = await Goal.findById(id)
+            .populate("actions.userId", "username avatar")
+            .populate("members.userId", "username avatar")
+            .lean()
+            .exec();
         if (!doc) return res.status(404).json({ message: "Goal Tidak Ditemukan" });
 
         // hitung progress fallback
