@@ -8,6 +8,10 @@ import { authenticateTokenMiddleware } from "../middleware/authMiddleware.js"
 
 const api = express.Router();
 
+
+//Cari users
+api.get("/users", authenticateTokenMiddleware, userController.listUsers);
+
 //goals
 api.get("/goals", authenticateTokenMiddleware, goalController.listGoals);
 api.post("/goals", authenticateTokenMiddleware, goalController.addGoal);

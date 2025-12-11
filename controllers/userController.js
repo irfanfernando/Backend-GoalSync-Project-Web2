@@ -70,3 +70,21 @@ export const signIn = async (req, res) => {
         res.status(500).json({message: error.message});
     }
 };
+
+export const listUsers = async (req, res) => {
+    try{
+        const q = (req.query.q || ""). trim();
+        const filter = q ? {
+            $or: [
+                { username: { $regex: q, $options: "i" } },
+                { email: { $regex: q, $options: "i" } }
+            ]
+        } : {};
+
+        const users = await userModel.find(filter).limit(30).select("_id username email").lean().exec();
+        return res.json({ data: users});
+    }catch (error){
+        res.status(500).json({ message: "Server Error", error: error.message});
+    }
+
+}

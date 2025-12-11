@@ -2,8 +2,19 @@ import Goal from "../models/goalModels.js";
 import mongoose from "mongoose";
 
 export const listGoals = async (req, res) => {
-    try{
-        const filter = req.user?.userId ? { createdBy: req.user.userId } : {};
+    try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const filter = {
+      $or: [
+        { createdBy: userId },
+        { "members.userId": userId },
+      ],
+    };
         const docs = await Goal.find(filter).lean().exec(); 
 
         const results = docs.map((goal) => {
@@ -21,7 +32,7 @@ export const listGoals = async (req, res) => {
 
     } catch(error) {
         console.error("[listGoals] ERROR:", error);
-        res.status(500).json({ message: "Server Error !", error: err.message});
+        res.status(500).json({ message: "Server Error !", error: error.message});
     }
 }
 
@@ -48,8 +59,8 @@ export const addGoal = async (req, res)=> {
             data: newGoal
         });
    
-    } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message});
+    } catch (error) {
+        res.status(500).json({ message: "Server Error", error: error.message});
     }
     
 };
@@ -60,15 +71,15 @@ export const detailGoal = async (req, res) => {
 
         if(!mongoose.Types.ObjectId.isValid(id))
             return res.status(400).json({ message: "ID Tidak Valid"});
-        const goal = await Goal.findOne({
-            _id: id,
-            createdBy: req.user.userId
-        });
+        const doc = await Goal.findById(id).lean().exec();
+        if (!doc) return res.status(404).json({ message: "Goal Tidak Ditemukan" });
 
-        if(!goal)
-            return res.status(404).json({message: "Goal Tidak Ditemukan"});
-        
-        res.json({ message: "Detail Goal", data:goal});
+        // hitung progress fallback
+        const current = Number(doc.currentValue ?? 0);
+        const target = Number(doc.targetValue ?? 100);
+        const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+
+        return res.json({ data: { ...doc, progress } });
     } catch (err) {
         res.status(500).json({ message: "Server Error", error: err.message});
     }
@@ -77,25 +88,29 @@ export const detailGoal = async (req, res) => {
 export const updateGoal = async (req, res) => {
     try{
         const {id} = req.params;
-        const updates = req.body;
+        const { title, description, targetValue } = req.body;
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid id" });
 
-        if (!mongoose.Types.ObjectId.isValid(id))
-            return res.status(400).json({message: "ID Tidak Valid"});
+        // optional: ensure owner only can update
+        const userId = req.user?.userId;
+        const filter = userId ? { _id: id, createdBy: mongoose.Types.ObjectId(userId) } : { _id: id };
 
-        const updated = await Goal.findOneAndUpdate(
-            { _id: id, createdBy: req.user.userId},
-            updates,
-            { new : true}
-        );
+        const update = {};
+        if (title !== undefined) update.title = title;
+        if (description !== undefined) update.description = description;
+        if (targetValue !== undefined) update.targetValue = targetValue;
 
-        if (!updated)
-            return res.status(404).json({ message: "Goal Tidak Ditemukan"});
-        res.json({
-            message: "Goal berhasil Diupdate",
-            data:updated
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message});
+        const updated = await Goal.findOneAndUpdate(filter, update, { new: true }).lean().exec();
+        if (!updated) return res.status(404).json({ message: "Goal not found or permission denied" });
+
+        // recompute progress
+        const current = Number(updated.currentValue ?? 0);
+        const target = Number(updated.targetValue ?? 100);
+        updated.progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+
+        return res.json({ message: "Goal updated", data: updated });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error", error: error.message});
     }
 };
 
