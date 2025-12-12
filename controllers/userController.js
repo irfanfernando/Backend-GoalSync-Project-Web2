@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
 import { hash, compare } from "../utils/hashUtils.js";
 import userModel from "../models/userModel.js";
 import { getJwtToken } from "../utils/jwtSignUtils.js";
@@ -70,6 +73,66 @@ export const signIn = async (req, res) => {
         res.status(500).json({message: error.message});
     }
 };
+
+export const getMe = async (req, res) =>{
+    try{
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ message: "Unauthorized" });
+         const user = await User.findById(userId).select("-password").lean().exec();
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.json({ data: user });
+
+    } catch (err) {
+        console.error("[getMe] ERROR:", err);
+        return res.status(500).json({ message: "Server Error", error: err.message });
+    }
+};
+export const updateMe = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { username } = req.body;
+    const updates = {};
+
+    if (username && username.toString().trim() !== "") updates.username = username.toString().trim();
+
+    
+    if (req.file) {
+      const uploadsDir = path.join(process.cwd(), "public", "avatars");
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+      
+      const mime = req.file.mimetype; 
+      const ext = mime === "image/jpeg" ? "jpg" : mime.split("/")[1];
+      const filename = `${userId}-${Date.now()}.${ext}`;
+      const filepath = path.join(uploadsDir, filename);
+
+     
+      await sharp(req.file.buffer).resize(256, 256, { fit: "cover" }).toFile(filepath);
+
+     
+      const prev = await User.findById(userId).lean().exec();
+      if (prev && prev.avatar) {
+        const oldPath = path.join(process.cwd(), "public", prev.avatar);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch (e) { /* ignore */ }
+        }
+      }
+
+      
+      updates.avatar = `/avatars/${filename}`;
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true }).select("-password").lean().exec();
+    return res.json({ message: "Profile updated", data: updated });
+  } catch (err) {
+    console.error("[updateMe] ERROR:", err);
+    return res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+
 
 export const listUsers = async (req, res) => {
     try{
