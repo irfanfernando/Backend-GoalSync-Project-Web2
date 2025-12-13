@@ -30,6 +30,7 @@ api.post("/goals/:id/progress", authenticateTokenMiddleware, progressController.
 api.post("/signin", userController.signIn);
 api.post("/signup", userController.signUp);
 
+//profile
 api.get("/me", authenticateTokenMiddleware, userController.getMe);
 api.put("/me", authenticateTokenMiddleware, upload.single("avatar"), userController.updateMe);
 
