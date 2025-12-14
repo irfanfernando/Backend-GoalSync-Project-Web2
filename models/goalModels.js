@@ -74,7 +74,7 @@ const goalSchema = new mongoose.Schema({
 
 
     members: { type: [memberSchema], default: [] },
-    //actions: { type: [actionSchema], default: [] },
+    actions: { type: [actionSchema], default: [] },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isPublic: { type: Boolean, default: false },
     

@@ -22,7 +22,14 @@ export const addTask = async (req, res) => {
     };
 
     goal.tasks.push(newTask);
+
+    goal.actions.push({
+      userId: req.user?.userId,
+      note: `Added task "${newTask.title}"`,
+    });
+
     await goal.save();
+
 
     res.status(201).json({
       message: "Task added",
@@ -50,6 +57,12 @@ export const toggleTask = async (req, res) => {
     }
 
     task.completed = !task.completed;
+    goal.actions.push({
+      userId: req.user?.userId,
+      note: task.completed
+        ? `Completed task "${task.title}"`
+        : `Reopened task "${task.title}"`,
+    });
     await goal.save();
 
     res.json({
