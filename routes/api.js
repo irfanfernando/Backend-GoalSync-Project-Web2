@@ -2,7 +2,6 @@ import express from "express";
 
 import * as goalController from "../controllers/goalController.js"
 import * as memberController from "../controllers/memberController.js"
-import * as progressController from "../controllers/progressController.js"
 import * as taskController from "../controllers/taskController.js";
 import upload from "../middleware/uploadAvatar.js";
 import * as userController from "../controllers/userController.js"
@@ -27,11 +26,18 @@ api.patch("/goals/:id/timeline",authenticateTokenMiddleware,goalController.updat
 //Members
 api.post("/goals/:id/members", authenticateTokenMiddleware, memberController.addMember);
 
-//task
-api.post("/goals/:id/tasks",authenticateTokenMiddleware,taskController.addTask);
+// task
+api.post(
+  "/goals/:id/tasks",
+  authenticateTokenMiddleware,
+  taskController.addTask
+);
 
-//Progress
-api.post("/goals/:id/progress", authenticateTokenMiddleware, progressController.updateProgress);
+api.patch(
+  "/goals/:goalId/tasks/:taskId/toggle",
+  authenticateTokenMiddleware,
+  taskController.toggleTask
+);
 
 //Auth
 api.post("/signin", userController.signIn);

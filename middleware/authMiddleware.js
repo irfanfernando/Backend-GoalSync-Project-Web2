@@ -16,9 +16,8 @@ export const authenticateTokenMiddleware = (req, res, next) => {
     }
 
     req.user = {
-      userId: payload.userId ?? payload.user_id ?? payload.id ?? null,
-      user_id: payload.user_id ?? payload.userId ?? payload.id ?? null,
-      username: payload.username ?? payload.name ?? null,
+      userId: payload.userId,
+      username: payload.username,
     };
 
     next();

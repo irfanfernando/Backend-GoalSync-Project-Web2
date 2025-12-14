@@ -1,13 +1,17 @@
 import Goal from "../models/goalModels.js";
 import mongoose from "mongoose";
 
-export const listGoals = async (req, res) => {
-    try {
-    const userId = req.user?.userId;
+const calculateProgress = (tasks = []) => {
+  if (!tasks.length) return 0;
+  const done = tasks.filter(t => t.completed).length;
+  return Math.round((done / tasks.length) * 100);
+};
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+
+export const listGoals = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const filter = {
       $or: [
@@ -15,108 +19,100 @@ export const listGoals = async (req, res) => {
         { "members.userId": userId },
       ],
     };
-        const docs = await Goal.find(filter).lean().exec(); 
 
-        const results = docs.map((goal) => {
-            const current = Number(goal.currentValue ?? 0);
-            const target = Number(goal.targetValue ?? 100); 
-            const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+    const docs = await Goal.find(filter).lean().exec();
 
-      return {
-        ...goal,
-        progress,
-      };
+    const results = docs.map(goal => ({
+      ...goal,
+      progress: calculateProgress(goal.tasks),
+    }));
+
+    res.json({ data: results });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+export const addGoal = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title)
+      return res.status(400).json({ message: "Title wajib diisi" });
+
+    const newGoal = await Goal.create({
+      title,
+      description,
+      createdBy: req.user.userId,
+      tasks: [],
+      members: [],
     });
 
-    return res.json({ data: results });
-
-    } catch(error) {
-        console.error("[listGoals] ERROR:", error);
-        res.status(500).json({ message: "Server Error !", error: error.message});
-    }
-}
-
-export const addGoal = async (req, res)=> {
-    try{
-        const { title, description, targetValue} = req.body;
-
-    
-        if (!title){
-            return res.status(400).json({
-                message: "Title Wajib diisi"
-            });
-        }
-
-        const newGoal = await Goal.create({
-            title,
-            description,
-            targetValue,
-            createdBy: req.user.userId
-        });
-
-        res.status(201).json({
-            message: "Goal Berhasil dibuat",
-            data: newGoal
-        });
-   
-    } catch (error) {
-        res.status(500).json({ message: "Server Error", error: error.message});
-    }
-    
+    res.status(201).json({
+      message: "Goal berhasil dibuat",
+      data: newGoal,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
 };
+
 
 export const detailGoal = async (req, res) => {
-    try{
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(400).json({ message: "ID tidak valid" });
 
-        if(!mongoose.Types.ObjectId.isValid(id))
-            return res.status(400).json({ message: "ID Tidak Valid"});
-        const doc = await Goal.findById(id)
-            .populate("actions.userId", "username avatar")
-            .populate("members.userId", "username avatar")
-            .lean()
-            .exec();
-        if (!doc) return res.status(404).json({ message: "Goal Tidak Ditemukan" });
+    const doc = await Goal.findById(id)
+      .populate("members.userId", "username avatar")
+      .lean()
+      .exec();
 
-        // hitung progress fallback
-        const current = Number(doc.currentValue ?? 0);
-        const target = Number(doc.targetValue ?? 100);
-        const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+    if (!doc)
+      return res.status(404).json({ message: "Goal tidak ditemukan" });
 
-        return res.json({ data: { ...doc, progress } });
-    } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message});
-    }
+    res.json({
+      data: {
+        ...doc,
+        progress: calculateProgress(doc.tasks),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
 };
+
 
 export const updateGoal = async (req, res) => {
-    try{
-        const {id} = req.params;
-        const { title, description, targetValue } = req.body;
-        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid id" });
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
 
-        // optional: ensure owner only can update
-        const userId = req.user?.userId;
-        const filter = userId ? { _id: id, createdBy: mongoose.Types.ObjectId(userId) } : { _id: id };
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return res.status(400).json({ message: "Invalid ID" });
 
-        const update = {};
-        if (title !== undefined) update.title = title;
-        if (description !== undefined) update.description = description;
-        if (targetValue !== undefined) update.targetValue = targetValue;
+    const updated = await Goal.findOneAndUpdate(
+      { _id: id, createdBy: req.user.userId },
+      { title, description },
+      { new: true }
+    ).lean();
 
-        const updated = await Goal.findOneAndUpdate(filter, update, { new: true }).lean().exec();
-        if (!updated) return res.status(404).json({ message: "Goal not found or permission denied" });
+    if (!updated)
+      return res.status(404).json({ message: "Goal not found" });
 
-        // recompute progress
-        const current = Number(updated.currentValue ?? 0);
-        const target = Number(updated.targetValue ?? 100);
-        updated.progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
-
-        return res.json({ message: "Goal updated", data: updated });
-    } catch (error) {
-        res.status(500).json({ message: "Server Error", error: error.message});
-    }
+    res.json({
+      message: "Goal updated",
+      data: {
+        ...updated,
+        progress: calculateProgress(updated.tasks),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
 };
+
 
 export const deleteGoal = async (req, res) => {
     try{
@@ -144,14 +140,12 @@ export const updateTimeline = async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
 
-    const goal = await Goal.findByIdAndUpdate(
-      req.params.id,
-      {
-        startDate: startDate || null,
-        endDate: endDate || null,
-      },
-      { new: true }
-    );
+    const goal = await Goal.findOneAndUpdate(
+  { _id: req.params.id, createdBy: req.user.userId },
+  { startDate: startDate || null, endDate: endDate || null },
+  { new: true }
+);
+
 
     res.json({
       message: "Timeline updated",
