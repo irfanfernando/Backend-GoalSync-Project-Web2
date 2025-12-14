@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// member schema
 const memberSchema = new mongoose.Schema({
     userId: mongoose.Schema.Types.ObjectId,
     name: String,
@@ -13,6 +14,8 @@ const memberSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+// action schema
 const actionSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -22,6 +25,8 @@ const actionSchema = new mongoose.Schema(
   },
   { _id: true }
 );
+
+// goal schema
 const goalSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -31,6 +36,18 @@ const goalSchema = new mongoose.Schema({
     description: { type: String, default: "" },
     targetValue: { type: Number, default: 100 },
     currentValue: { type: Number, default: 0 },
+
+    // Tambahan untuk membuat Timeline (Fitur Baru)
+    startDate: {
+      type: Date,
+      default: null,
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+
+
     members: { type: [memberSchema], default: [] },
     actions: { type: [actionSchema], default: [] },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
