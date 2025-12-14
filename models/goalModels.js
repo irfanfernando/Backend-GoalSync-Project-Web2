@@ -26,6 +26,23 @@ const actionSchema = new mongoose.Schema(
   { _id: true }
 );
 
+// task schema
+const taskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  isDone: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 // goal schema
 const goalSchema = new mongoose.Schema({
     title: {
@@ -34,8 +51,10 @@ const goalSchema = new mongoose.Schema({
         trim: true
     },
     description: { type: String, default: "" },
-    targetValue: { type: Number, default: 100 },
-    currentValue: { type: Number, default: 0 },
+
+    //Fitur legacy (target & current value UNUSED since sudah ada pakai fitur add task !!!)
+    //targetValue: { type: Number, default: 100 },
+    //currentValue: { type: Number, default: 0 },
 
     // Tambahan untuk membuat Timeline (Fitur Baru)
     startDate: {
@@ -47,14 +66,24 @@ const goalSchema = new mongoose.Schema({
       default: null,
     },
 
+    //tambahan task list
+    tasks: {
+    type: [taskSchema],
+    default: [],
+    },
+
 
     members: { type: [memberSchema], default: [] },
     actions: { type: [actionSchema], default: [] },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isPublic: { type: Boolean, default: false },
+    
 },{
     timestamps: true
 });
+
+
+
 
 export default mongoose.model("Goal", goalSchema);
 

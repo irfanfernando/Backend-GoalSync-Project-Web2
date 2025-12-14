@@ -3,6 +3,7 @@ import express from "express";
 import * as goalController from "../controllers/goalController.js"
 import * as memberController from "../controllers/memberController.js"
 import * as progressController from "../controllers/progressController.js"
+import * as taskController from "../controllers/taskController.js";
 import upload from "../middleware/uploadAvatar.js";
 import * as userController from "../controllers/userController.js"
 import { authenticateTokenMiddleware } from "../middleware/authMiddleware.js"
@@ -20,8 +21,14 @@ api.put("/goals/:id", authenticateTokenMiddleware, goalController.updateGoal);
 api.delete("/goals/:id", authenticateTokenMiddleware, goalController.deleteGoal);
 api.get("/goals/:id", authenticateTokenMiddleware, goalController.detailGoal);
 
+//timeline
+api.patch("/goals/:id/timeline",authenticateTokenMiddleware,goalController.updateTimeline);
+
 //Members
 api.post("/goals/:id/members", authenticateTokenMiddleware, memberController.addMember);
+
+//task
+api.post("/goals/:id/tasks",authenticateTokenMiddleware,taskController.addTask);
 
 //Progress
 api.post("/goals/:id/progress", authenticateTokenMiddleware, progressController.updateProgress);

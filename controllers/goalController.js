@@ -139,3 +139,27 @@ export const deleteGoal = async (req, res) => {
     }
 };
 
+// Tambahan controller untuk mengupdate Timeline (Fitur Baru)
+export const updateTimeline = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    const goal = await Goal.findByIdAndUpdate(
+      req.params.id,
+      {
+        startDate: startDate || null,
+        endDate: endDate || null,
+      },
+      { new: true }
+    );
+
+    res.json({
+      message: "Timeline updated",
+      data: goal
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
