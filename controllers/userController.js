@@ -78,7 +78,7 @@ export const getMe = async (req, res) =>{
     try{
         const userId = req.user?.userId;
         if (!userId) return res.status(401).json({ message: "Unauthorized" });
-         const user = await User.findById(userId).select("-password").lean().exec();
+         const user = await userModel.findById(userId).select("-password").lean().exec();
     if (!user) return res.status(404).json({ message: "User not found" });
     return res.json({ data: user });
 
@@ -112,7 +112,7 @@ export const updateMe = async (req, res) => {
       await sharp(req.file.buffer).resize(256, 256, { fit: "cover" }).toFile(filepath);
 
      
-      const prev = await User.findById(userId).lean().exec();
+      const prev = await userModel.findById(userId).lean().exec();
       if (prev && prev.avatar) {
         const oldPath = path.join(process.cwd(), "public", prev.avatar);
         if (fs.existsSync(oldPath)) {
@@ -124,7 +124,7 @@ export const updateMe = async (req, res) => {
       updates.avatar = `/avatars/${filename}`;
     }
 
-    const updated = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true }).select("-password").lean().exec();
+    const updated = await userModel.findByIdAndUpdate(userId, { $set: updates }, { new: true })
     return res.json({ message: "Profile updated", data: updated });
   } catch (err) {
     console.error("[updateMe] ERROR:", err);
