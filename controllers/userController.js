@@ -121,7 +121,7 @@ export const updateMe = async (req, res) => {
       }
 
       
-      updates.avatar = `/avatars/${filename}`;
+      updates.avatar = `avatars/${filename}`;
     }
 
     const updated = await userModel.findByIdAndUpdate(userId, { $set: updates }, { new: true })

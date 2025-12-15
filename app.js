@@ -7,6 +7,8 @@ import cors from "cors";
 const app = express ();
 
 app.use(express.static(path.join(process.cwd(), "public"))); 
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 
 app.use(cors());
 app.use(express.json());
