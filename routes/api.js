@@ -17,6 +17,7 @@ api.get("/users", authenticateTokenMiddleware, userController.listUsers);
 api.get("/goals", authenticateTokenMiddleware, goalController.listGoals);
 api.post("/goals", authenticateTokenMiddleware, goalController.addGoal);
 api.put("/goals/:id", authenticateTokenMiddleware, goalController.updateGoal);
+api.patch("/goals/:id", authenticateTokenMiddleware, goalController.updateGoal);
 api.delete("/goals/:id", authenticateTokenMiddleware, goalController.deleteGoal);
 api.get("/goals/:id", authenticateTokenMiddleware, goalController.detailGoal);
 
@@ -25,6 +26,7 @@ api.patch("/goals/:id/timeline",authenticateTokenMiddleware,goalController.updat
 
 //Members
 api.post("/goals/:id/members", authenticateTokenMiddleware, memberController.addMember);
+api.delete("/goals/:id/members", authenticateTokenMiddleware, memberController.removeMember);
 
 // task
 api.post(
@@ -37,6 +39,38 @@ api.patch(
   "/goals/:goalId/tasks/:taskId/toggle",
   authenticateTokenMiddleware,
   taskController.toggleTask
+);
+
+// subtask routes
+api.post(
+  "/goals/:goalId/tasks/:taskId/subtasks",
+  authenticateTokenMiddleware,
+  taskController.addSubtask
+);
+
+api.patch(
+  "/goals/:goalId/tasks/:taskId/subtasks/:subtaskId/toggle",
+  authenticateTokenMiddleware,
+  taskController.toggleSubtask
+);
+
+api.patch(
+  "/goals/:goalId/tasks/:taskId/subtasks/:subtaskId/assign",
+  authenticateTokenMiddleware,
+  taskController.assignSubtask
+);
+
+// Edit task/subtask routes
+api.patch(
+  "/goals/:goalId/tasks/:taskId/edit",
+  authenticateTokenMiddleware,
+  taskController.editTask
+);
+
+api.patch(
+  "/goals/:goalId/tasks/:taskId/subtasks/:subtaskId/edit",
+  authenticateTokenMiddleware,
+  taskController.editSubtask
 );
 
 //Auth
