@@ -1,4 +1,5 @@
 import Goal from "../models/goalModels.js";
+import User from "../models/userModel.js";
 import mongoose from "mongoose";
 
 const calculateProgress = (tasks = []) => {
@@ -65,7 +66,10 @@ export const detailGoal = async (req, res) => {
       return res.status(400).json({ message: "ID tidak valid" });
 
     const doc = await Goal.findById(id)
+      .populate("createdBy", "username avatar email")
       .populate("members.userId", "username avatar")
+      .populate("actions.userId", "username avatar")
+      .populate("tasks.subtasks.assignedTo", "username avatar")
       .lean()
       .exec();
 
@@ -76,6 +80,7 @@ export const detailGoal = async (req, res) => {
       data: {
         ...doc,
         progress: calculateProgress(doc.tasks),
+        isOwner: doc.createdBy._id.toString() === req.user.userId,
       },
     });
   } catch (err) {
@@ -92,9 +97,22 @@ export const updateGoal = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ message: "Invalid ID" });
 
+    // Get user info for activity log
+    const user = await User.findById(req.user.userId).select("username");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
     const updated = await Goal.findOneAndUpdate(
       { _id: id, createdBy: req.user.userId },
-      { title, description },
+      { 
+        title, 
+        description,
+        $push: {
+          actions: {
+            note: `${user.username} edited the goal title`,
+            userId: req.user.userId
+          }
+        }
+      },
       { new: true }
     ).lean();
 
@@ -140,12 +158,26 @@ export const updateTimeline = async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
 
-    const goal = await Goal.findOneAndUpdate(
-  { _id: req.params.id, createdBy: req.user.userId },
-  { startDate: startDate || null, endDate: endDate || null },
-  { new: true }
-);
+    // Get user info for activity log
+    const user = await User.findById(req.user.userId).select("username");
+    if (!user) return res.status(404).json({ message: "User not found" });
 
+    const goal = await Goal.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user.userId },
+      { 
+        startDate: startDate || null, 
+        endDate: endDate || null,
+        $push: {
+          actions: {
+            note: `${user.username} updated the project timeline`,
+            userId: req.user.userId
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!goal) return res.status(404).json({ message: "Goal not found" });
 
     res.json({
       message: "Timeline updated",
