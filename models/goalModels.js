@@ -26,6 +26,28 @@ const actionSchema = new mongoose.Schema(
   { _id: true }
 );
 
+// subtask schema (nested within tasks)
+const subtaskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 // task schema
 const taskSchema = new mongoose.Schema({
   title: {
@@ -36,6 +58,10 @@ const taskSchema = new mongoose.Schema({
   completed: {          
     type: Boolean,
     default: false,
+  },
+  subtasks: {
+    type: [subtaskSchema],
+    default: [],
   },
   createdAt: {
     type: Date,
