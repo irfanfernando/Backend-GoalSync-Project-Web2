@@ -97,21 +97,11 @@ export const updateMe = async (req, res) => {
 
     if (username && username.toString().trim() !== "") updates.username = username.toString().trim();
 
-    
     if (req.file) {
-      const uploadsDir = path.join(process.cwd(), "public", "avatars");
-      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
+      // Multer with disk storage: req.file.filename is the saved filename
+      const filename = req.file.filename;
       
-      const mime = req.file.mimetype; 
-      const ext = mime === "image/jpeg" ? "jpg" : mime.split("/")[1];
-      const filename = `${userId}-${Date.now()}.${ext}`;
-      const filepath = path.join(uploadsDir, filename);
-
-     
-      await sharp(req.file.buffer).resize(256, 256, { fit: "cover" }).toFile(filepath);
-
-     
+      // Delete old avatar if exists
       const prev = await userModel.findById(userId).lean().exec();
       if (prev && prev.avatar) {
         const oldPath = path.join(process.cwd(), "public", prev.avatar);
@@ -120,7 +110,7 @@ export const updateMe = async (req, res) => {
         }
       }
 
-      
+      // Save new avatar path
       updates.avatar = `avatars/${filename}`;
     }
 
@@ -144,7 +134,7 @@ export const listUsers = async (req, res) => {
             ]
         } : {};
 
-        const users = await userModel.find(filter).limit(30).select("_id username email").lean().exec();
+        const users = await userModel.find(filter).limit(30).select("_id username email avatar").lean().exec();
         return res.json({ data: users});
     }catch (error){
         res.status(500).json({ message: "Server Error", error: error.message});
