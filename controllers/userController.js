@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import sharp from "sharp";
 import { hash, compare } from "../utils/hashUtils.js";
 import userModel from "../models/userModel.js";
 import { getJwtToken } from "../utils/jwtSignUtils.js";

@@ -23,4 +23,3 @@ export const authenticateTokenMiddleware = (req, res, next) => {
     next();
   });
 };
-export default authenticateTokenMiddleware;

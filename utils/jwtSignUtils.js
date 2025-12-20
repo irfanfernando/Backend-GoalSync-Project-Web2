@@ -9,7 +9,3 @@ export const getJwtToken = (userId, username) => {
         {expiresIn: "7d"}
     );
 };
-
-export const verifyJwtToken = (token) => {
-    return jwt.verify(token, JWT_SECRET);
-};

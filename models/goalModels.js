@@ -78,9 +78,7 @@ const goalSchema = new mongoose.Schema({
     },
     description: { type: String, default: "" },
 
-    //Fitur legacy (target & current value UNUSED since sudah ada pakai fitur add task !!!)
-    //targetValue: { type: Number, default: 100 },
-    //currentValue: { type: Number, default: 0 },
+    
 
     // Tambahan untuk membuat Timeline (Fitur Baru)
     startDate: {
